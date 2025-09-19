@@ -89,12 +89,15 @@ section h3 {
 }
 
 .participants-list {
-  list-style: disc;
-  padding-left: 22px;
+  list-style: none; /* hide default bullet points as requested */
+  padding-left: 0;
   margin: 0;
 }
 
 .participant-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 6px;
 }
 
@@ -183,4 +186,24 @@ footer {
   margin-top: 30px;
   padding: 20px;
   color: #666;
+}
+
+.unregister-btn {
+  background: transparent;
+  border: none;
+  color: #c62828;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.unregister-btn:hover {
+  background-color: rgba(198, 40, 40, 0.08);
+}
+
+.unregister-btn:focus {
+  outline: 2px solid rgba(198, 40, 40, 0.2);
+  outline-offset: 2px;
 }

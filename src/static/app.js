@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
-      const response = await fetch("/activities");
+      const response = await fetch("/activities", { cache: "no-store" });
       const activities = await response.json();
 
       // Clear loading message
@@ -33,7 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
                      (p) =>
                        `<li class="participant-item" title="${p}"><span class="participant-badge">${formatParticipant(
                          p
-                       )}</span></li>`
+                       )}</span><button class="unregister-btn" data-email="${p}" aria-label="Unregister ${formatParticipant(
+                         p
+                       )}">✖</button></li>`
                    )
                    .join("")}
                </ul>
@@ -48,13 +50,48 @@ document.addEventListener("DOMContentLoaded", () => {
           ${participantsHTML}
         `;
 
+        // Attach activity name to the card so event handlers can identify it
+        activityCard.dataset.activity = name;
         activitiesList.appendChild(activityCard);
 
-        // Add option to select dropdown
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        activitySelect.appendChild(option);
+        // Delegated click handler for unregister buttons inside this activity card
+        activityCard.addEventListener("click", async (e) => {
+          const btn = e.target.closest(".unregister-btn");
+          if (!btn) return;
+
+          const email = btn.dataset.email;
+          const activityName = activityCard.dataset.activity;
+
+          if (!email || !activityName) return;
+
+          if (!confirm(`Unregister ${email} from ${activityName}?`)) return;
+
+          try {
+            const resp = await fetch(
+              `/activities/${encodeURIComponent(activityName)}/participants?email=${encodeURIComponent(email)}`,
+              { method: "DELETE" }
+            );
+
+            const result = await resp.json();
+            if (resp.ok) {
+              messageDiv.textContent = result.message;
+              messageDiv.className = "success";
+              // Refresh the activities list so the participants section updates immediately
+              await fetchActivities();
+            } else {
+              messageDiv.textContent = result.detail || "An error occurred while unregistering";
+              messageDiv.className = "error";
+            }
+
+            messageDiv.classList.remove("hidden");
+            setTimeout(() => messageDiv.classList.add("hidden"), 5000);
+          } catch (err) {
+            console.error("Error unregistering:", err);
+            messageDiv.textContent = "Failed to unregister. Please try again.";
+            messageDiv.className = "error";
+            messageDiv.classList.remove("hidden");
+          }
+        });
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
@@ -93,7 +130,9 @@ document.addEventListener("DOMContentLoaded", () => {
         signupForm.reset();
 
         // Refresh the activities list so the participants section updates immediately
-        fetchActivities();
+        // Use await to ensure the UI reflects the server's updated state before
+        // continuing (and avoid relying on any cached GET responses).
+        await fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -115,4 +154,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+
 });
